@@ -1,6 +1,7 @@
 import { Creator, Merchant, Campaign, Metric, ReviewResult } from "./types";
 import creatorsSeed from "@/data/creators.json";
 import merchantsSeed from "@/data/merchants.json";
+import { normalizeCreatorRow } from "./importCreators";
 
 // 内存数据存储（MVP demo 用，零外部依赖即可运行）。
 // 生产环境可平滑替换为 Prisma + Postgres（见 prisma/schema.prisma 与 README）。
@@ -25,7 +26,7 @@ export function getCreator(id: string): Creator | undefined {
 }
 
 export function addCreator(c: Omit<Creator, "id">): Creator {
-  const nc: Creator = { ...c, id: `c${Date.now()}` };
+  const nc: Creator = { ...c, id: `c${Date.now()}`, handle: c.handle.replace(/^@/, "").trim() };
   creators = [...creators, nc];
   return nc;
 }
@@ -36,6 +37,36 @@ export function updateCreator(
 ): Creator | undefined {
   creators = creators.map((c) => (c.id === id ? { ...c, ...patch } : c));
   return getCreator(id);
+}
+
+// 批量导入：解析后的行 → 归一化 → 按 handle 去重（库存 + 批内）→ 入库
+export function importCreators(rows: Record<string, string>[]): {
+  added: Creator[];
+  skipped: string[];
+  errors: { row: number; reason: string }[];
+} {
+  const added: Creator[] = [];
+  const skipped: string[] = [];
+  const errors: { row: number; reason: string }[] = [];
+  const norm = (h: string) => h.replace(/^@/, "").trim().toLowerCase();
+  const seen = new Set(creators.map((c) => norm(c.handle)));
+  for (let i = 0; i < rows.length; i++) {
+    const { creator, error } = normalizeCreatorRow(rows[i]);
+    if (error || !creator) {
+      errors.push({ row: i + 1, reason: error || "未知错误" });
+      continue;
+    }
+    const key = creator.handle.toLowerCase();
+    if (seen.has(key)) {
+      skipped.push(creator.handle);
+      continue;
+    }
+    seen.add(key);
+    const nc: Creator = { ...creator, id: `c${Date.now()}_${i}` };
+    creators = [...creators, nc];
+    added.push(nc);
+  }
+  return { added, skipped, errors };
 }
 
 export function listMerchants(): Merchant[] {
