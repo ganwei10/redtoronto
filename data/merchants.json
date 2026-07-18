@@ -1,0 +1,20 @@
+[
+  {
+    "id": "m1",
+    "name": "多伦多某某地产",
+    "industry": "地产",
+    "contact": "wechat: toronto-realty"
+  },
+  {
+    "id": "m2",
+    "name": "多村医美诊所",
+    "industry": "医美",
+    "contact": "wechat: toronto-medspa"
+  },
+  {
+    "id": "m3",
+    "name": "多伦多留学中介",
+    "industry": "留学移民",
+    "contact": "email: hello@studyto.ca"
+  }
+]

@@ -1,0 +1,139 @@
+[
+  {
+    "id": "c1",
+    "handle": "@多村小厨娘",
+    "followers": 32000,
+    "engagementRate": 0.065,
+    "niche": ["餐饮", "美食"],
+    "city": "多伦多",
+    "rateCAD": 800,
+    "availability": true,
+    "pastCases": ["https://xiaohongshu.com/example/1"],
+    "note": "本地探店强，奶茶火锅类转化好"
+  },
+  {
+    "id": "c2",
+    "handle": "@多伦多地产Lisa",
+    "followers": 85000,
+    "engagementRate": 0.04,
+    "niche": ["地产"],
+    "city": "多伦多",
+    "rateCAD": 2500,
+    "availability": true,
+    "pastCases": ["https://xiaohongshu.com/example/2"],
+    "note": "楼花/买房干货，客单价高"
+  },
+  {
+    "id": "c3",
+    "handle": "@加拿大移民姐",
+    "followers": 120000,
+    "engagementRate": 0.05,
+    "niche": ["留学", "移民"],
+    "city": "多伦多",
+    "rateCAD": 3000,
+    "availability": false,
+    "pastCases": ["https://xiaohongshu.com/example/3"],
+    "note": "头部账号，档期紧"
+  },
+  {
+    "id": "c4",
+    "handle": "@多村美妆日记",
+    "followers": 45000,
+    "engagementRate": 0.09,
+    "niche": ["医美", "护肤"],
+    "city": "多伦多",
+    "rateCAD": 1200,
+    "availability": true,
+    "pastCases": ["https://xiaohongshu.com/example/4"],
+    "note": "医美测评转化强"
+  },
+  {
+    "id": "c5",
+    "handle": "@多伦多宝妈团",
+    "followers": 28000,
+    "engagementRate": 0.075,
+    "niche": ["母婴", "育儿"],
+    "city": "多伦多",
+    "rateCAD": 700,
+    "availability": true,
+    "pastCases": ["https://xiaohongshu.com/example/5"]
+  },
+  {
+    "id": "c6",
+    "handle": "@多村吃喝玩乐",
+    "followers": 60000,
+    "engagementRate": 0.055,
+    "niche": ["餐饮", "旅游"],
+    "city": "多伦多",
+    "rateCAD": 1000,
+    "availability": true,
+    "pastCases": ["https://xiaohongshu.com/example/6"]
+  },
+  {
+    "id": "c7",
+    "handle": "@多伦多理财笔记",
+    "followers": 38000,
+    "engagementRate": 0.045,
+    "niche": ["保险", "理财"],
+    "city": "多伦多",
+    "rateCAD": 900,
+    "availability": true,
+    "pastCases": ["https://xiaohongshu.com/example/7"]
+  },
+  {
+    "id": "c8",
+    "handle": "@多村语言培训王",
+    "followers": 15000,
+    "engagementRate": 0.085,
+    "niche": ["留学", "语言培训"],
+    "city": "多伦多",
+    "rateCAD": 500,
+    "availability": true,
+    "pastCases": ["https://xiaohongshu.com/example/8"],
+    "note": "高互动腰部，性价比极高"
+  },
+  {
+    "id": "c9",
+    "handle": "@多伦多月子中心",
+    "followers": 9000,
+    "engagementRate": 0.07,
+    "niche": ["母婴", "月子"],
+    "city": "多伦多",
+    "rateCAD": 600,
+    "availability": true,
+    "pastCases": ["https://xiaohongshu.com/example/9"]
+  },
+  {
+    "id": "c10",
+    "handle": "@多村探店菌",
+    "followers": 70000,
+    "engagementRate": 0.06,
+    "niche": ["餐饮", "美食"],
+    "city": "多伦多",
+    "rateCAD": 1100,
+    "availability": true,
+    "pastCases": ["https://xiaohongshu.com/example/10"]
+  },
+  {
+    "id": "c11",
+    "handle": "@多伦多医美测评",
+    "followers": 52000,
+    "engagementRate": 0.08,
+    "niche": ["医美"],
+    "city": "多伦多",
+    "rateCAD": 1500,
+    "availability": true,
+    "pastCases": ["https://xiaohongshu.com/example/11"]
+  },
+  {
+    "id": "c12",
+    "handle": "@多村新移民指南",
+    "followers": 95000,
+    "engagementRate": 0.052,
+    "niche": ["移民", "地产"],
+    "city": "多伦多",
+    "rateCAD": 2200,
+    "availability": true,
+    "pastCases": ["https://xiaohongshu.com/example/12"]
+  }
+]

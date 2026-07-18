@@ -1,0 +1,76 @@
+// 生产升级路径：将 MVP 的内存存储替换为 Postgres + Prisma。
+// 用法：npm i prisma @prisma/client && npx prisma generate && npx prisma db push
+// 向量检索可改用 pgvector（embedding 字段改为 vector 类型），见架构文档。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Creator {
+  id             String   @id @default(cuid())
+  handle         String
+  platformId     String?
+  followers      Int
+  engagementRate Float
+  niche          String[]
+  city           String
+  rateCAD        Float
+  availability   Boolean  @default(true)
+  pastCases      String[]
+  embedding      Float[]
+  note           String?
+  createdAt      DateTime @default(now())
+}
+
+model Merchant {
+  id        String   @id @default(cuid())
+  name      String
+  industry  String
+  contact   String
+  createdAt DateTime @default(now())
+}
+
+model Brief {
+  id         String   @id @default(cuid())
+  merchantId String?
+  raw        Json
+  structured Json
+  createdAt  DateTime @default(now())
+}
+
+model Campaign {
+  id         String   @id @default(cuid())
+  name       String
+  brief      Json
+  creatorIds String[]
+  status     String   @default("draft")
+  budgetCAD  Float
+  metrics    Metric[]
+  createdAt  DateTime @default(now())
+}
+
+model Content {
+  id         String   @id @default(cuid())
+  campaignId String
+  creatorId  String
+  body       String
+  status     String   @default("draft")
+  flags      String[]
+  createdAt  DateTime @default(now())
+}
+
+model Metric {
+  id          String   @id @default(cuid())
+  campaignId  String
+  date        DateTime
+  impressions Int
+  engagements Int
+  clicks      Int
+  leads       Int
+  campaign    Campaign @relation(fields: [campaignId], references: [id])
+}
