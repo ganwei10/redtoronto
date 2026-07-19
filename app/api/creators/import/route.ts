@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { importCreators } from "@/lib/store";
 import { parseImportPayload } from "@/lib/importCreators";
+import { auth } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "未登录" }, { status: 401 });
+
   let text = "";
   const ct = req.headers.get("content-type") || "";
   if (ct.includes("application/json")) {
@@ -15,7 +19,7 @@ export async function POST(req: NextRequest) {
   }
 
   const rows = parseImportPayload(text);
-  const result = importCreators(rows);
+  const result = await importCreators(rows);
   return NextResponse.json({
     total: rows.length,
     added: result.added.length,

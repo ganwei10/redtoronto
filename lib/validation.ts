@@ -183,3 +183,54 @@ export function validateMetricInput(body: any): ValidationResult<any> {
   }
   return { ok: Object.keys(errors).length === 0, errors, value };
 }
+
+const ROLES = ["merchant", "operator", "creator"];
+
+// 注册
+export function validateRegisterInput(body: any): ValidationResult<any> {
+  const errors: FieldErrors = {};
+  const name = reqStr(body?.name);
+  if (!name) errors.name = "名称为必填项";
+  const email = reqStr(body?.email).toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "邮箱格式不正确";
+  const password = reqStr(body?.password);
+  if (password.length < 6) errors.password = "密码至少 6 位";
+  const role = reqStr(body?.role);
+  if (!ROLES.includes(role)) errors.role = "请选择有效角色";
+  const company = reqStr(body?.company);
+  if (role === "merchant" && !company) errors.company = "商户名称为必填项";
+  return {
+    ok: Object.keys(errors).length === 0,
+    errors,
+    value: {
+      name,
+      email,
+      password,
+      role,
+      company,
+      industry: reqStr(body?.industry),
+    },
+  };
+}
+
+// 商户提交营销需求
+export function validateMerchantRequestInput(body: any): ValidationResult<any> {
+  const errors: FieldErrors = {};
+  const industry = reqStr(body?.industry);
+  if (!industry) errors.industry = "行业为必填项";
+  const budget = nonNegNum(body?.budget);
+  if (budget === null) errors.budget = "预算须为不小于 0 的数值";
+  return {
+    ok: Object.keys(errors).length === 0,
+    errors,
+    value: {
+      industry,
+      goal: reqStr(body?.goal),
+      budget: budget ?? 0,
+      audience: reqStr(body?.audience),
+      sellingPoints: reqStr(body?.sellingPoints),
+      kpi: reqStr(body?.kpi),
+      duration: reqStr(body?.duration),
+    },
+  };
+}

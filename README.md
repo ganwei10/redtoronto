@@ -12,53 +12,57 @@
 ## 技术栈
 
 - Next.js 15（App Router）+ TypeScript + Tailwind CSS
-- AI：Anthropic Claude（Brief / 内容生成；未配置 key 时回退规则生成）
-- 数据：MVP 内存存储（零依赖即可运行），生产可平滑升级为 Prisma + Postgres（见 `prisma/schema.prisma`）
+- AI：Anthropic Claude（Brief / 内容 / 复盘生成；未配置 key 时回退规则生成）
+- 身份认证：**NextAuth v5（Auth.js）**，Credentials 登录 + JWT 会话 + 角色（RBAC）
+- 数据：**Prisma + PostgreSQL**（已生产化，非内存存储）；`lib/store.ts` 统一异步数据访问
 - 部署：Vercel + GitHub
 
-## 功能
+## 功能（已上线版本）
 
-1. **三角色登录入口** `/login`：商户 / 运营方 / 博主独立身份入口（当前为前端角色态演示，v1.1 接入真实账号体系）
-2. **博主库** `/creators`：单条录入 / 列表 / 标签 / 报价 / 可接单状态；**支持 CSV / JSON 批量导入**（中英文表头别名、按账号去重、互动率百分号归一化）；**全字段前后端双重校验，拦截负数 / 越界 / 必填缺失**
-3. **Brief 生成** `/brief`：商户填需求 → AI 输出结构化 Campaign Brief（行业必填、预算 ≥ 0）
-4. **博主匹配** `/match`：按赛道 / 城市 / 互动率 / 报价打分 → Top-N 推荐 + 理由（预算 ≥ 0、返回数量 1–50）
-5. **内容工作台** `/content`：选中博主 + Brief → AI 生成种草文案 + 中英本地化 + 合规校验
-6. **Campaign 看板** `/campaigns`：创建 Campaign、内联录入效果指标（曝光/互动/点击/留资，均 ≥ 0 整数）、查看曝光 / 互动 / 留资 / ROI
-7. **AI 复盘报告** `/campaigns`：一键生成结构化复盘（亮点 / 问题 / 下一轮建议），自动沉淀到
-8. **复盘知识库** `/kb`：所有 Campaign 复盘自动累积，供后续 Brief / 复盘通过 RAG 调用，沉淀可复制方法论
+**v1.1 · 三角色真实登录与权限（RBAC）**
+- `/register` 注册（选角色：商户 / 运营方 / 博主），密码使用 Node `crypto.scrypt` 哈希
+- `/login` 真实登录（NextAuth Credentials），会话 JWT 携带角色
+- `middleware.ts` 按角色门禁：`/merchant` 仅商户、`/creator` 仅博主，其余需登录
+- 运营方：全套运营控制台（博主库 / Brief / 匹配 / 内容 / Campaign / 需求审核 / 知识库）
+
+**v1.0 · 商户门户**
+- `/merchant` 商户工作台：需求数、Campaign 数、累计曝光 / 留资等汇总指标
+- `/merchant/requests/new` 提交营销需求 → 自动生成结构化 Brief 并创建 Campaign 草稿
+- `/requests`（运营方）审核商户需求，一键「采纳并启动」
+
+**通用能力**
+- 博主库 `/creators`：单条录入 / 列表 / 标签 / 报价 / 可接单状态；**CSV / JSON 批量导入**（中英文表头别名、按账号去重、互动率百分号归一化）；全字段前后端双重校验，拦截负数 / 越界 / 必填缺失
+- Brief 生成 `/brief`、博主匹配 `/match`、内容工作台 `/content`（中英本地化 + 合规校验）
+- Campaign 看板 `/campaigns`：内联录入效果指标（均 ≥ 0 整数），查看曝光 / 互动 / 留资 / ROI
+- AI 复盘报告 + 复盘知识库 `/kb`（持久化到 Postgres，供后续 RAG）
 
 ## 本地运行
 
+> 需要 PostgreSQL。本地可用 [Neon](https://neon.tech) / [Supabase](https://supabase.com) 免费库，或 `brew install postgresql`。
+
 ```bash
 npm install
-cp .env.example .env.local   # 可选：填入 ANTHROPIC_API_KEY 启用 AI 生成
-npm run dev                  # http://localhost:3000
+cp .env.example .env.local
+# 在 .env.local 填入：
+#   DATABASE_URL=postgresql://user:pass@host:5432/redtoronto?schema=public
+#   AUTH_SECRET=$(openssl rand -base64 32)   # 必填，生产环境务必强随机
+npx prisma generate
+npx prisma db push        # 创建表结构
+npm run db:seed           # 写入初始博主/商户，并创建运营方账号 operator@redtoronto.com / admin123
+npm run dev               # http://localhost:3000
 ```
 
-未配置 `ANTHROPIC_API_KEY` 时，Brief / 内容生成会回退到规则模板，应用仍可完整演示。
+未配置 `ANTHROPIC_API_KEY` 时，AI 生成回退到规则模板，应用仍可完整运行。
 
 ## 部署到 Vercel
 
-1. 将本仓库推到 GitHub（见下方）。
-2. 在 Vercel 导入该仓库，框架选 Next.js（自动识别）。
-3. 在 Vercel 控制台 → Environment Variables 配置：
-   - `ANTHROPIC_API_KEY`（启用 AI 生成）
-   - 可选 `ANTHROPIC_MODEL`
-4. Deploy。`vercel.json` 已包含基础配置。
-
-## 升级到 Postgres（生产持久化）
-
-Vercel Serverless 文件系统只读，内存数据在冷启动后会重置。生产环境建议：
-
-```bash
-npm i prisma @prisma/client
-# 编辑 prisma/schema.prisma（已提供）
-# 在 .env 设置 DATABASE_URL（Neon / Supabase 等托管 Postgres）
-npx prisma generate && npx prisma db push
-```
-
-然后将 `lib/store.ts` 的读写替换为 Prisma client（接口已对齐，迁移成本低）。
-向量匹配可选用 pgvector：将 `embedding` 字段改为 `vector` 类型并用 cosine 距离排序（见架构文档）。
+1. 将本仓库推到 GitHub。
+2. Vercel 导入该仓库，框架选 Next.js（自动识别）。
+3. 控制台 → Environment Variables 配置：
+   - `DATABASE_URL`（托管 Postgres 连接串，如 Neon）
+   - `AUTH_SECRET`（强随机值）
+   - `ANTHROPIC_API_KEY`（可选，启用 AI 生成）
+4. Deploy。部署后执行一次 `prisma db push`（可在 Vercel 的 Build & Development Settings 的 Install Command 已含 `prisma generate`；建表可在本地或 Vercel Shell 执行）。
 
 ## 合规提醒
 
@@ -69,9 +73,15 @@ npx prisma generate && npx prisma db push
 ## 目录结构
 
 ```
-app/        页面与 API Route Handlers（含 /login 三角色入口、各业务页）
-lib/        store(数据) / ai(Claude) / kb(知识库) / match(匹配) / compliance(合规) / validation(校验) / role(角色态) / types
-data/       种子博主与商户
-docs/       MRD / PRD / 架构文档
-prisma/     生产数据库 schema
+app/
+  (auth)        /login /register
+  /merchant     商户门户（v1.0）
+  /requests     运营方需求审核（v1.1）
+  /creators /brief /match /content /campaigns /kb   运营控制台
+  /api          Route Handlers（含 /api/auth/[...nextauth]、注册、需求、审核）
+lib/            store(Prisma) / auth / auth.config / password / prisma / ai / kb / match / validation / types
+prisma/         schema.prisma + seed.mjs
+data/           种子博主与商户（JSON）
+docs/           MRD / PRD / 架构文档
+middleware.ts   角色门禁
 ```

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { listCreators } from "@/lib/store";
 import { matchCreators } from "@/lib/match";
 import { validateMatchInput } from "@/lib/validation";
+import { auth } from "@/lib/auth";
 
 function inferNiches(industry: string): string[] {
   const map: Record<string, string[]> = {
@@ -22,6 +23,9 @@ function inferNiches(industry: string): string[] {
 }
 
 export async function POST(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "未登录" }, { status: 401 });
+
   const body = await req.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "请求体格式错误" }, { status: 400 });
 
@@ -30,8 +34,9 @@ export async function POST(req: NextRequest) {
 
   const niches: string[] =
     value.niches && value.niches.length ? value.niches : inferNiches(value.industry);
+  const creators = await listCreators();
   const results = matchCreators({
-    creators: listCreators(),
+    creators,
     niches,
     budget: value.budget,
     city: value.city,

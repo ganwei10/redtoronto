@@ -1,6 +1,6 @@
 # 项目架构文档（Architecture）
 
-> 产品：**红多营运营平台**　版本：v0.1　日期：2026-07-18
+> 产品：**红多营运营平台**　版本：v1.1　日期：2026-07-18
 
 ---
 
@@ -13,7 +13,7 @@
 | 数据库 | PostgreSQL（Neon 等托管）+ Prisma | 关系数据 + 托管易部署 |
 | 向量检索 | pgvector | 博主画像 / Brief embedding 相似度匹配，免额外向量库 |
 | AI | Anthropic Claude（Haiku/Sonnet 路由） | Brief/内容/复盘生成；embedding 走兼容接口 |
-| 认证 | NextAuth（Auth.js） | 商户/运营登录 |
+| 认证 | NextAuth v5（Auth.js） | Credentials 登录 + JWT 会话 + 角色 RBAC；密码用 Node `crypto.scrypt` 哈希 |
 | 部署 | Vercel | 一键部署、Serverless 函数隐藏密钥 |
 | CI / 托管 | GitHub + GitHub Actions | 代码托管与自动部署 |
 
@@ -67,47 +67,70 @@ redtoronto/                # 仓库根（Vercel 部署根目录）
 
 ---
 
-## 4. 数据模型（核心）
+## 4. 数据模型（核心，实际落地于 `prisma/schema.prisma`）
 
 ```prisma
+model User {                    // 身份认证（NextAuth 兼容）
+  id           String   @id @default(cuid())
+  email        String?  @unique
+  name         String?
+  passwordHash String?          // scrypt 哈希
+  role         String   @default("merchant") // merchant|operator|creator
+  merchant     Merchant?
+  creator      Creator?
+}
+
 model Creator {
-  id             String   @id @default(cuid())
-  handle         String
-  platformId     String?
-  followers      Int
-  engagementRate Float
-  niche          String[]        // 赛道标签
-  city           String
-  rateCAD        Float
-  availability   Boolean  @default(true)
-  pastCases      String[]
-  embedding      Float[]         // 画像向量（pgvector）
-  createdAt      DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String?  @unique
+  handle       String
+  followers    Int
+  engagementRate Float          // 0-1
+  niche        String[]         // 赛道标签
+  city         String
+  rateCAD      Float
+  availability Boolean  @default(true)
+  pastCases    String[]
+  embedding    Float[]
+  note         String?
 }
 
 model Merchant {
   id        String   @id @default(cuid())
+  userId    String?  @unique
   name      String
   industry  String
   contact   String
-  createdAt DateTime @default(now())
+  email     String?
+  requests  MerchantRequest[]
+  campaigns Campaign[]
 }
 
-model Brief {
-  id         String   @id @default(cuid())
-  merchantId String?
-  raw        Json            // 表单原始输入
-  structured Json            // AI 生成的结构化 Brief
-  createdAt  DateTime @default(now())
+model MerchantRequest {         // 商户提交的营销需求（v1.0）
+  id            String   @id @default(cuid())
+  merchantId    String
+  industry      String
+  goal          String
+  budget        Float
+  audience      String
+  sellingPoints String
+  kpi           String
+  duration      String
+  brief         Json?           // 自动生成的结构化 Brief
+  status        String   @default("pending")
+  campaign      Campaign?
 }
 
 model Campaign {
-  id         String   @id @default(cuid())
-  briefId    String
+  id         String    @id @default(cuid())
+  merchantId String?
+  brief      Json
   creatorIds String[]
-  status     String   @default("draft")
+  status     String    @default("draft")
   budgetCAD  Float
-  createdAt  DateTime @default(now())
+  review     Json?            // 复盘报告（v0.4 沉淀）
+  metrics    Metric[]
+  request    MerchantRequest?
 }
 
 model Content {
@@ -116,8 +139,7 @@ model Content {
   creatorId  String
   body       String
   status     String   @default("draft")
-  flags      String[] // 合规标记
-  createdAt  DateTime @default(now())
+  flags      String[]
 }
 
 model Metric {
@@ -129,7 +151,17 @@ model Metric {
   clicks      Int
   leads       Int
 }
+
+model KnowledgeEntry {          // 复盘知识库（v0.4 沉淀，v1.x 接 RAG）
+  id           String   @id @default(cuid())
+  campaignId   String
+  campaignName String
+  review       Json
+  text         String
+}
 ```
+
+> 向量检索（pgvector）为后续增强项：将 `Creator.embedding` 改为 `vector` 类型并用 cosine 距离排序即可，当前匹配使用 JS 业务权重打分（embedding 预留）。
 
 ---
 
@@ -144,6 +176,17 @@ model Metric {
 
 ---
 
+## 5.1 认证与权限（RBAC，v1.1）
+
+- **NextAuth v5（Auth.js）**：`Credentials` Provider 校验邮箱 + 密码（scrypt 哈希），会话采用 **JWT**，`token.role` 写入角色。
+- **注册**：`/api/auth/register` 创建 `User`；角色为 `merchant` 时同步创建 `Merchant` 档案（绑定 `userId`）。
+- **鉴权层级**：
+  1. `middleware.ts`：未登录跳转 `/login`；`/merchant` 仅 `merchant`、`/creator` 仅 `creator` 可访问（基于 `getToken` 的角色门禁，edge 安全）。
+  2. API Route Handlers：写操作（POST）统一 `await auth()` 校验登录态；商户需求创建、需求审核分别校验 `merchant` / `operator` 角色。
+- **密码安全**：使用 Node 内置 `crypto.scrypt`（盐 + 派生 + `timingSafeEqual`），不引入原生编译依赖。
+
+---
+
 ## 6. 部署架构
 
 ```
@@ -152,8 +195,8 @@ GitHub (main)
    ▼
 Vercel 自动部署（构建 + Serverless 函数）
    │
-   ├─ Neon Postgres (DATABASE_URL)
-   └─ 环境变量：ANTHROPIC_API_KEY / NEXTAUTH_SECRET
+   ├─ Neon/Supabase Postgres (DATABASE_URL)
+   └─ 环境变量：ANTHROPIC_API_KEY / AUTH_SECRET / NEXTAUTH_SECRET
 ```
 
 - Vercel 函数处理 AI 调用与 DB 访问，密钥仅服务端可见。

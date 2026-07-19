@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
-import { RoleProvider } from "@/lib/role";
+import { Providers } from "./providers";
 import Header from "./header";
 
 export const metadata: Metadata = {
@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="zh">
       <body>
-        <RoleProvider>
+        <Providers>
           <div className="mx-auto flex min-h-screen max-w-6xl flex-col">
             <Header />
             <main className="flex-1 px-6 py-8">{children}</main>
@@ -26,7 +26,7 @@ export default function RootLayout({
               红多营运营平台 · 多伦多小红书智能营销运营平台 · AI 驱动
             </footer>
           </div>
-        </RoleProvider>
+        </Providers>
       </body>
     </html>
   );

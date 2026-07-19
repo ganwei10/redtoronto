@@ -17,6 +17,8 @@ export interface Merchant {
   name: string;
   industry: string;
   contact: string;
+  email?: string;
+  userId?: string;
 }
 
 export interface BriefInput {

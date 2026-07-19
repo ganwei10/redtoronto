@@ -1,21 +1,17 @@
+import { prisma } from "./prisma";
 import { ReviewResult } from "./types";
 
-// 复盘报告知识库（MVP demo 用内存存储）。
-// 沉淀每次 Campaign 的复盘，供后续 Brief / 复盘通过 RAG 调用，
-// 逐步累积可复制的多伦多本地方法论。
+// 复盘报告知识库（持久化到 Postgres，供后续 RAG 检索）。
 export interface KbEntry {
   id: string;
   campaignId: string;
   campaignName: string;
   review: ReviewResult;
   createdAt: string;
-  // 用于 RAG 检索的纯文本片段
   text: string;
 }
 
-let entries: KbEntry[] = [];
-
-function toText(e: Omit<KbEntry, "id" | "text" | "createdAt">): string {
+function toText(e: { campaignName: string; review: ReviewResult }): string {
   const r = e.review;
   return [
     `Campaign「${e.campaignName}」复盘：`,
@@ -26,31 +22,54 @@ function toText(e: Omit<KbEntry, "id" | "text" | "createdAt">): string {
   ].join("\n");
 }
 
-export function addReview(entry: {
+export async function addReview(entry: {
   campaignId: string;
   campaignName: string;
   review: ReviewResult;
-}): KbEntry {
-  const full: KbEntry = {
-    ...entry,
-    id: `kb${Date.now()}`,
-    createdAt: new Date().toISOString(),
-    text: "",
+}): Promise<KbEntry> {
+  const text = toText(entry);
+  const row = await prisma.knowledgeEntry.create({
+    data: {
+      campaignId: entry.campaignId,
+      campaignName: entry.campaignName,
+      review: entry.review as any,
+      text,
+    },
+  });
+  return {
+    id: row.id,
+    campaignId: row.campaignId,
+    campaignName: row.campaignName,
+    review: row.review as unknown as ReviewResult,
+    createdAt: row.createdAt.toISOString(),
+    text: row.text,
   };
-  full.text = toText(entry);
-  entries = [full, ...entries];
-  return full;
 }
 
-export function listReviews(): KbEntry[] {
-  return entries;
+export async function listReviews(): Promise<KbEntry[]> {
+  const rows = await prisma.knowledgeEntry.findMany({ orderBy: { createdAt: "desc" } });
+  return rows.map((r) => ({
+    id: r.id,
+    campaignId: r.campaignId,
+    campaignName: r.campaignName,
+    review: r.review as unknown as ReviewResult,
+    createdAt: r.createdAt.toISOString(),
+    text: r.text,
+  }));
 }
 
-export function getReviewByCampaign(campaignId: string): KbEntry | undefined {
-  return entries.find((e) => e.campaignId === campaignId);
-}
-
-// 返回知识库全部文本，供 RAG（未来接向量检索）使用
-export function getKnowledgeBaseText(): string {
-  return entries.map((e) => e.text).join("\n\n---\n\n");
+export async function getReviewByCampaign(campaignId: string): Promise<KbEntry | null> {
+  const r = await prisma.knowledgeEntry.findFirst({
+    where: { campaignId },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!r) return null;
+  return {
+    id: r.id,
+    campaignId: r.campaignId,
+    campaignName: r.campaignName,
+    review: r.review as unknown as ReviewResult,
+    createdAt: r.createdAt.toISOString(),
+    text: r.text,
+  };
 }

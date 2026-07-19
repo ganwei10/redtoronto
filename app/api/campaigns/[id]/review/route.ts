@@ -2,16 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCampaign, getCreator, saveReview } from "@/lib/store";
 import { generateReview, ReviewInput } from "@/lib/ai";
 import { addReview, getReviewByCampaign } from "@/lib/kb";
+import { auth } from "@/lib/auth";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const cmp = getCampaign(id);
+  const cmp = await getCampaign(id);
   if (!cmp) return NextResponse.json({ error: "campaign 不存在" }, { status: 404 });
-  // 优先取已沉淀到知识库的复盘
-  const kb = getReviewByCampaign(id);
+  const kb = await getReviewByCampaign(id);
   return NextResponse.json({ review: cmp.review || kb?.review || null });
 }
 
@@ -19,11 +19,14 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "未登录" }, { status: 401 });
+
   const { id } = await params;
-  const cmp = getCampaign(id);
+  const cmp = await getCampaign(id);
   if (!cmp) return NextResponse.json({ error: "campaign 不存在" }, { status: 404 });
 
-  const total = cmp.metrics.reduce(
+  const total = (cmp.metrics || []).reduce(
     (s, m) => ({
       impressions: s.impressions + m.impressions,
       engagements: s.engagements + m.engagements,
@@ -33,8 +36,10 @@ export async function POST(
     { impressions: 0, engagements: 0, clicks: 0, leads: 0 }
   );
 
-  const creators = cmp.creatorIds
-    .map((cid) => getCreator(cid))
+  const creatorObjs = await Promise.all(
+    (cmp.creatorIds || []).map((cid) => getCreator(cid))
+  );
+  const creators = creatorObjs
     .filter(Boolean)
     .map((c) => ({
       handle: c!.handle,
@@ -44,7 +49,7 @@ export async function POST(
 
   const input: ReviewInput = {
     name: cmp.name,
-    objective: cmp.brief.objective,
+    objective: (cmp.brief as any)?.objective ?? "",
     budgetCAD: cmp.budgetCAD,
     total,
     creators,
@@ -52,9 +57,8 @@ export async function POST(
 
   const review = await generateReview(input);
 
-  // 沉淀到知识库 + 回写 Campaign
-  saveReview(id, review);
-  addReview({ campaignId: id, campaignName: cmp.name, review });
+  await saveReview(id, review);
+  await addReview({ campaignId: id, campaignName: cmp.name, review });
 
   return NextResponse.json({ review });
 }

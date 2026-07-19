@@ -139,8 +139,8 @@
 | v0.2 | 博主库 + 匹配 | ✅ 已完成 |
 | v0.3 | 内容工作台 + 看板 | ✅ 已完成 |
 | v0.4 | 复盘 + 部署上线 + 参数校验加固 | ✅ 已完成 |
-| v1.0 | 商户门户（注册/登录 + 需求提交 + 效果查看） | ⏳ 规划中 |
-| v1.1 | **三角色统一登录与权限（RBAC）** + 博主门户 + 真实账号体系 | ⏳ 规划中（当前为前端角色态演示） |
+| v1.0 | 商户门户（注册/登录 + 需求提交 + 效果查看） | ✅ 已完成 |
+| v1.1 | **三角色统一登录与权限（RBAC）** + 博主门户入口 + 真实账号体系（NextAuth） | ✅ 已完成 |
 | v1.2 | 代理商/蒲公英对接 + 结算自动化 | ⏳ 规划中 |
 | v2.0 | 多城市 + 数据 API + 规模化运营 | ⏳ 规划中 |
 
@@ -152,3 +152,6 @@
 - [x] Brief / 匹配 / 内容 / 看板 / 复盘全链路可运行，Vercel 可部署
 - [x] 新增 `/login` 三角色入口演示（前端角色态），为 v1.1 真实账号体系预留接口
 - [x] 全站命名为「红多营运营平台」，文案已正式化
+- [x] **v1.0 商户门户已落地**：`/register` 注册、`/merchant` 工作台、`/merchant/requests/new` 需求提交并自动生成 Brief、`/requests` 运营方审核
+- [x] **v1.1 真实登录已落地**：NextAuth v5 Credentials + JWT + 角色 RBAC，`middleware.ts` 角色门禁，`lib/password.ts` scrypt 哈希
+- [x] **数据存储已切换为 Prisma + PostgreSQL**：`lib/store.ts` 全量异步化，`prisma/schema.prisma` 含 User/MerchantRequest/KnowledgeEntry 等，内存存储已弃用
