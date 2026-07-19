@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listCreators } from "@/lib/store";
 import { matchCreators } from "@/lib/match";
+import { validateMatchInput } from "@/lib/validation";
 
 function inferNiches(industry: string): string[] {
   const map: Record<string, string[]> = {
@@ -21,15 +22,21 @@ function inferNiches(industry: string): string[] {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "请求体格式错误" }, { status: 400 });
+
+  const { ok, errors, value } = validateMatchInput(body);
+  if (!ok) return NextResponse.json({ error: "参数校验失败", fields: errors }, { status: 422 });
+
   const niches: string[] =
-    body.niches && body.niches.length
-      ? body.niches
-      : inferNiches(body.industry || "");
-  const budget = Number(body.budget) || 0;
-  const city = body.city || "多伦多";
-  const results = matchCreators({ creators: listCreators(), niches, budget, city });
+    value.niches && value.niches.length ? value.niches : inferNiches(value.industry);
+  const results = matchCreators({
+    creators: listCreators(),
+    niches,
+    budget: value.budget,
+    city: value.city,
+  });
   return NextResponse.json({
-    results: results.slice(0, Number(body.topN) || 5),
+    results: results.slice(0, value.topN),
   });
 }

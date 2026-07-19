@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Creator } from "@/lib/types";
+import { validateCreatorInput } from "@/lib/validation";
 
 type ImportResult = {
   total: number;
@@ -28,6 +29,8 @@ export default function CreatorsPage() {
     availability: true,
     note: "",
   });
+  const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const [importText, setImportText] = useState("");
   const [importing, setImporting] = useState(false);
@@ -46,7 +49,19 @@ export default function CreatorsPage() {
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
-    await fetch("/api/creators", {
+    setFormError(null);
+    const { ok, errors } = validateCreatorInput({
+      ...form,
+      followers: form.followers === "" ? NaN : Number(form.followers),
+      engagementRate: form.engagementRate === "" ? NaN : Number(form.engagementRate),
+      rateCAD: form.rateCAD === "" ? NaN : Number(form.rateCAD),
+    });
+    if (!ok) {
+      setFormError(Object.values(errors)[0]);
+      return;
+    }
+    setSubmitting(true);
+    const res = await fetch("/api/creators", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -56,6 +71,12 @@ export default function CreatorsPage() {
         rateCAD: Number(form.rateCAD),
       }),
     });
+    setSubmitting(false);
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setFormError(d.error || "提交失败，请检查输入");
+      return;
+    }
     setForm({
       handle: "",
       followers: "",
@@ -97,15 +118,20 @@ export default function CreatorsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">博主库</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">博主库</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          管理多伦多本地博主资源：维护账号、粉丝规模、互动率、报价与接单状态，支持批量导入与智能匹配。
+        </p>
+      </div>
 
       <div className="card">
-        <h3 className="mb-1 font-semibold">批量导入</h3>
+        <h3 className="mb-1 font-semibold">批量导入博主</h3>
         <p className="mb-3 text-xs text-slate-500">
           支持粘贴 CSV / JSON（数组）。表头兼容中英文：账号/昵称、粉丝/粉丝量、互动率、
           赛道/标签、城市、报价、可接单、备注。赛道与案例用
           <code className="mx-1 rounded bg-slate-100 px-1">|</code>或逗号分隔；互动率填百分比（如 5.8）。
-          按账号自动去重。
+          系统将自动按账号去重，并拦截负值等非法数据。
         </p>
         <textarea
           className="input h-40 w-full font-mono text-xs"
@@ -119,7 +145,7 @@ export default function CreatorsPage() {
             onClick={runImport}
             disabled={importing || !importText.trim()}
           >
-            {importing ? "导入中…" : "导入"}
+            {importing ? "导入中…" : "开始导入"}
           </button>
           <button
             className="btn-ghost text-xs"
@@ -140,17 +166,17 @@ export default function CreatorsPage() {
             className="hidden"
             onChange={onFile}
           />
-          <span className="text-xs text-slate-400">CSV 或 JSON 文件</span>
+          <span className="text-xs text-slate-400">支持 CSV 或 JSON 文件</span>
         </div>
 
         {importResult && (
           <div className="mt-3 space-y-1 text-sm">
             <p className="text-green-600">
-              成功导入 {importResult.added} 个（共解析 {importResult.total} 行）
+              成功导入 {importResult.added} 位（共解析 {importResult.total} 行）
             </p>
             {importResult.skipped.length > 0 && (
               <p className="text-amber-600">
-                跳过重复 {importResult.skipped.length} 个：
+                跳过重复 {importResult.skipped.length} 位：
                 {importResult.skipped.join("、")}
               </p>
             )}
@@ -168,9 +194,14 @@ export default function CreatorsPage() {
 
       <div className="card">
         <h3 className="mb-3 font-semibold">新增博主</h3>
+        {formError && (
+          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+            {formError}
+          </div>
+        )}
         <form onSubmit={add} className="grid gap-3 sm:grid-cols-3">
           <div>
-            <label className="label">账号</label>
+            <label className="label">小红书账号 <span className="text-red-500">*</span></label>
             <input
               className="input"
               value={form.handle}
@@ -184,15 +215,19 @@ export default function CreatorsPage() {
             <input
               className="input"
               type="number"
+              min={0}
+              step={1}
               value={form.followers}
               onChange={(e) => setForm({ ...form, followers: e.target.value })}
             />
           </div>
           <div>
-            <label className="label">互动率(%)</label>
+            <label className="label">互动率（%）</label>
             <input
               className="input"
               type="number"
+              min={0}
+              max={100}
               step="0.1"
               value={form.engagementRate}
               onChange={(e) =>
@@ -201,7 +236,7 @@ export default function CreatorsPage() {
             />
           </div>
           <div>
-            <label className="label">赛道(逗号分隔)</label>
+            <label className="label">赛道（逗号分隔）</label>
             <input
               className="input"
               value={form.niche}
@@ -218,10 +253,12 @@ export default function CreatorsPage() {
             />
           </div>
           <div>
-            <label className="label">报价 CAD</label>
+            <label className="label">报价（CAD）</label>
             <input
               className="input"
               type="number"
+              min={0}
+              step={1}
               value={form.rateCAD}
               onChange={(e) => setForm({ ...form, rateCAD: e.target.value })}
             />
@@ -232,18 +269,29 @@ export default function CreatorsPage() {
               className="input"
               value={form.note}
               onChange={(e) => setForm({ ...form, note: e.target.value })}
+              placeholder="选填，例如：本地探店 KOC、粉丝精准"
             />
           </div>
+          <div className="flex items-center gap-2 sm:col-span-3">
+            <label className="flex items-center gap-2 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={form.availability}
+                onChange={(e) => setForm({ ...form, availability: e.target.checked })}
+              />
+              当前可接单
+            </label>
+          </div>
           <div className="sm:col-span-3">
-            <button className="btn-primary" type="submit">
-              添加博主
+            <button className="btn-primary" type="submit" disabled={submitting}>
+              {submitting ? "提交中…" : "保存博主"}
             </button>
           </div>
         </form>
       </div>
 
       <div className="card">
-        <h3 className="mb-3 font-semibold">博主列表（{creators.length}）</h3>
+        <h3 className="mb-3 font-semibold">博主列表（共 {creators.length} 位）</h3>
         {loading ? (
           <p className="text-sm text-slate-400">加载中…</p>
         ) : (

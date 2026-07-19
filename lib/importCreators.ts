@@ -28,14 +28,15 @@ function pick(row: Record<string, string>, field: string): string {
   return "";
 }
 
-// 12.3k / 1.2w / 1.2万 / 12,300 → 数字
-function parseCount(s: string): number {
+// 12.3k / 1.2w / 1.2万 / 12,300 → 非负整数（拦截负数）
+function parseCount(s: string, max = 50_000_000): number {
   const t = s.trim().toLowerCase().replace(/,/g, "");
-  if (t.endsWith("k")) return Math.round(parseFloat(t) * 1000) || 0;
-  if (t.endsWith("w") || t.endsWith("万"))
-    return Math.round(parseFloat(t) * 10000) || 0;
-  const n = parseFloat(t);
-  return isNaN(n) ? 0 : Math.round(n);
+  let n = 0;
+  if (t.endsWith("k")) n = parseFloat(t) * 1000;
+  else if (t.endsWith("w") || t.endsWith("万")) n = parseFloat(t) * 10000;
+  else n = parseFloat(t);
+  if (!isFinite(n) || n < 0) return 0; // 负数/非法值归零，避免脏数据入库
+  return Math.min(Math.round(n), max);
 }
 
 // 单行 CSV 解析（支持引号转义）
@@ -126,7 +127,9 @@ export function normalizeCreatorRow(
   if (!handle) return { error: "缺少账号(handle)" };
 
   let er = Number(pick(row, "engagementRate")) || 0;
-  if (er > 1) er = er / 100; // 百分比 → 小数
+  if (!isFinite(er) || er < 0) er = 0;
+  if (er >= 1) er = Math.min(er / 100, 1); // 百分比 → 小数，上限 1
+  er = Math.max(0, Math.min(er, 1));
 
   const nicheRaw = pick(row, "niche");
   const niche = nicheRaw

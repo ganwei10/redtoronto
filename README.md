@@ -1,6 +1,6 @@
-# 红多营 RedToronto · 多伦多小红书营销服务商平台（MVP）
+# 红多营运营平台 · 多伦多小红书智能营销运营平台
 
-面向多伦多华人商户的**小红书营销服务商平台**：博主匹配、Brief 生成、内容工作台与效果看板，AI 驱动。
+面向多伦多华人商户的**小红书智能营销运营平台**：博主匹配、Brief 生成、内容工作台与效果看板，AI 驱动。
 定位：广告代理商的「多伦多本地化服务商」——本地商户 BD + 博主组织 + 内容本地化 + 效果归因。
 
 ## 文档
@@ -18,13 +18,14 @@
 
 ## 功能
 
-1. **博主库** `/creators`：单条录入 / 列表 / 标签 / 报价 / 可接单状态；**支持 CSV / JSON 批量导入**（中英文表头别名、按账号去重、互动率百分号归一化）
-2. **Brief 生成** `/brief`：商户填需求 → AI 输出结构化 Campaign Brief
-3. **博主匹配** `/match`：按赛道 / 城市 / 互动率 / 报价打分 → Top-N 推荐 + 理由
-4. **内容工作台** `/content`：选中博主 + Brief → AI 生成种草文案 + 中英本地化 + 合规校验
-5. **Campaign 看板** `/campaigns`：创建 Campaign、录入指标、查看曝光 / 互动 / 留资 / ROI
-6. **AI 复盘报告** `/campaigns`：一键生成结构化复盘（亮点 / 问题 / 下一轮建议），自动沉淀到
-7. **复盘知识库** `/kb`：所有 Campaign 复盘自动累积，供后续 Brief / 复盘通过 RAG 调用，沉淀可复制方法论
+1. **三角色登录入口** `/login`：商户 / 运营方 / 博主独立身份入口（当前为前端角色态演示，v1.1 接入真实账号体系）
+2. **博主库** `/creators`：单条录入 / 列表 / 标签 / 报价 / 可接单状态；**支持 CSV / JSON 批量导入**（中英文表头别名、按账号去重、互动率百分号归一化）；**全字段前后端双重校验，拦截负数 / 越界 / 必填缺失**
+3. **Brief 生成** `/brief`：商户填需求 → AI 输出结构化 Campaign Brief（行业必填、预算 ≥ 0）
+4. **博主匹配** `/match`：按赛道 / 城市 / 互动率 / 报价打分 → Top-N 推荐 + 理由（预算 ≥ 0、返回数量 1–50）
+5. **内容工作台** `/content`：选中博主 + Brief → AI 生成种草文案 + 中英本地化 + 合规校验
+6. **Campaign 看板** `/campaigns`：创建 Campaign、内联录入效果指标（曝光/互动/点击/留资，均 ≥ 0 整数）、查看曝光 / 互动 / 留资 / ROI
+7. **AI 复盘报告** `/campaigns`：一键生成结构化复盘（亮点 / 问题 / 下一轮建议），自动沉淀到
+8. **复盘知识库** `/kb`：所有 Campaign 复盘自动累积，供后续 Brief / 复盘通过 RAG 调用，沉淀可复制方法论
 
 ## 本地运行
 
@@ -68,8 +69,8 @@ npx prisma generate && npx prisma db push
 ## 目录结构
 
 ```
-app/        页面与 API Route Handlers
-lib/        store(数据) / ai(Claude) / kb(知识库) / match(匹配) / compliance(合规) / types
+app/        页面与 API Route Handlers（含 /login 三角色入口、各业务页）
+lib/        store(数据) / ai(Claude) / kb(知识库) / match(匹配) / compliance(合规) / validation(校验) / role(角色态) / types
 data/       种子博主与商户
 docs/       MRD / PRD / 架构文档
 prisma/     生产数据库 schema

@@ -4,8 +4,10 @@ import { getCreator } from "@/lib/store";
 import { StructuredBrief } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
+  const body = await req.json().catch(() => null);
+  if (!body || !body.creatorId)
+    return NextResponse.json({ error: "缺少 creatorId" }, { status: 400 });
   try {
-    const body = await req.json();
     const creator = getCreator(body.creatorId);
     if (!creator)
       return NextResponse.json({ error: "博主不存在" }, { status: 404 });

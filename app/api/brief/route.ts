@@ -1,22 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateBrief } from "@/lib/ai";
-import { BriefInput } from "@/lib/types";
+import { validateBriefInput } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const input: BriefInput = {
-      industry: body.industry || "",
-      goal: body.goal || "",
-      budget: Number(body.budget) || 0,
-      audience: body.audience || "",
-      sellingPoints: body.sellingPoints || "",
-      kpi: body.kpi || "",
-      duration: body.duration || "",
-    };
-    const brief = await generateBrief(input);
-    return NextResponse.json({ brief });
-  } catch {
-    return NextResponse.json({ error: "生成失败" }, { status: 500 });
-  }
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "请求体格式错误" }, { status: 400 });
+
+  const { ok, errors, value } = validateBriefInput(body);
+  if (!ok) return NextResponse.json({ error: "参数校验失败", fields: errors }, { status: 422 });
+
+  const brief = await generateBrief(value);
+  return NextResponse.json({ brief });
 }

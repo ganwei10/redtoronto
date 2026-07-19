@@ -43,7 +43,12 @@ export default function ContentPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">内容工作台</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">内容创作工作台</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          选定博主与营销目标，AI 一键生成种草文案、英文本地化版本，并自动完成合规校验。
+        </p>
+      </div>
 
       <div className="card">
         <form onSubmit={gen} className="grid gap-3 sm:grid-cols-2">
@@ -79,7 +84,7 @@ export default function ContentPage() {
           </div>
           <div className="sm:col-span-2">
             <button className="btn-primary" type="submit" disabled={loading}>
-              {loading ? "生成中…" : "AI 生成内容"}
+              {loading ? "生成中…" : "生成内容草稿"}
             </button>
           </div>
         </form>

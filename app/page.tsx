@@ -27,10 +27,9 @@ export default function HomePage() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="text-2xl font-bold text-slate-900">概览</h1>
+        <h1 className="text-2xl font-bold text-slate-900">平台概览</h1>
         <p className="mt-1 text-sm text-slate-500">
-          多伦多小红书营销服务商平台：把「找博主 → 出 Brief → 匹配 → 出内容 →
-          投放 → 看效果」做成一套 AI 驱动的系统。
+          红多营运营平台：将「博主匹配 → Brief 生成 → 内容创作 → 投放 → 效果归因」整合为一套 AI 驱动的运营系统，服务于多伦多小红书营销全链路。
         </p>
       </section>
 
@@ -45,30 +44,29 @@ export default function HomePage() {
 
       <section className="grid gap-4 md:grid-cols-3">
         <Link href="/brief" className="card hover:shadow-md">
-          <h3 className="font-semibold text-slate-900">1 · 录入 Brief</h3>
+          <h3 className="font-semibold text-slate-900">1 · 录入营销需求</h3>
           <p className="mt-2 text-sm text-slate-500">
-            商户填需求，AI 生成结构化 Campaign Brief（人群包、内容方向、KPI）。
+            商户提交需求，AI 生成结构化 Campaign Brief（人群包、内容方向、KPI）。
           </p>
         </Link>
         <Link href="/match" className="card hover:shadow-md">
-          <h3 className="font-semibold text-slate-900">2 · 博主匹配</h3>
+          <h3 className="font-semibold text-slate-900">2 · 博主智能匹配</h3>
           <p className="mt-2 text-sm text-slate-500">
-            按标签/调性/报价打分，输出 Top-N 推荐与匹配理由。
+            按赛道、报价与互动率综合打分，输出 Top-N 推荐与匹配理由。
           </p>
         </Link>
-        <Link href="/content" className="card hover:hadow-md hover:shadow-md">
-          <h3 className="font-semibold text-slate-900">3 · 内容工作台</h3>
+        <Link href="/content" className="card hover:shadow-md">
+          <h3 className="font-semibold text-slate-900">3 · 内容创作工作台</h3>
           <p className="mt-2 text-sm text-slate-500">
-            AI 生成种草文案/脚本，中英本地化 + 合规校验。
+            AI 生成种草文案与英文本地化版本，内置合规校验。
           </p>
         </Link>
       </section>
 
       <section className="card">
-        <h3 className="font-semibold text-slate-900">商业模式位置</h3>
+        <h3 className="font-semibold text-slate-900">平台定位</h3>
         <p className="mt-2 text-sm text-slate-500">
-          你是广告代理商的「多伦多本地化服务商」：本地商户 BD + 博主组织 +
-          内容本地化 + 效果归因，借助代理商的聚光 / 蒲公英合规通道完成投放。
+          作为广告代理商的「多伦多本地化运营方」：负责本地商户拓展、博主组织、内容本地化与效果归因，借助代理商的聚光 / 蒲公英合规通道完成投放与结算。
         </p>
       </section>
     </div>

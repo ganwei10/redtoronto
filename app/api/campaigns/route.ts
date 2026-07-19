@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listCampaigns, addCampaign } from "@/lib/store";
-import { StructuredBrief } from "@/lib/types";
+import { validateCampaignInput } from "@/lib/validation";
 
 export async function GET() {
   return NextResponse.json({ campaigns: listCampaigns() });
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const cmp = addCampaign({
-    name: body.name || "未命名 Campaign",
-    brief: body.brief as StructuredBrief,
-    creatorIds: body.creatorIds || [],
-    status: "draft",
-    budgetCAD: Number(body.budgetCAD) || 0,
-  });
-  return NextResponse.json({ campaign: cmp });
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "请求体格式错误" }, { status: 400 });
+
+  const { ok, errors, value } = validateCampaignInput(body);
+  if (!ok) return NextResponse.json({ error: "参数校验失败", fields: errors }, { status: 422 });
+
+  const cmp = addCampaign(value);
+  return NextResponse.json({ campaign: cmp }, { status: 201 });
 }
